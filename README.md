@@ -7,7 +7,7 @@ To create the quix.yaml file
 
 To create a local pipeline
 
-```quix local pipeline init```
+```quix local pipeline up```
 
 Running the above will create a compose.yaml file and spin up containers to run kafka locally and RedPanda(a webui to view kakfa messages)
 
