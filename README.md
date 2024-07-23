@@ -65,7 +65,7 @@ Now, we will call the below command
 ```bash
 quix pipeline update
 ``` 
-to update the microservice (demo-data producer) to the quix.yaml file. So after running the command, the quix.yaml file will be updated with a `deployments` key and the `name` under the deployments will be the name of the folder of the starter source, i.e. the producer i.e. `demo-data`. Here `demo-data` is the starter source which is publishing har-coded lines of JSON data to a Kafka topic, here the topic name is `f1-data`, which can be seen under the `variables` key under `deployments` in the quix.yaml file
+to update the microservice (demo-data producer) to the quix.yaml file. So after running the command, the quix.yaml file will be updated with a `deployments` key and the `name` under the deployments will be the name of the folder of the data source, i.e. the producer i.e. `demo-data`. Here `demo-data` is the demo data source which is publishing hard-coded lines of F1 telemetry JSON data to a Kafka topic, here the topic name is `f1-data`, which can be seen under the `variables` key under `deployments` in the quix.yaml file
 
 Our `compose.yaml` will also get updated with a new `service` with the name as `demo-data`
 
@@ -81,7 +81,7 @@ When the command has successfully run, we can observe the output with the below 
 docker compose ps --format "table {{.Name}}\t{{.Status}}"
 ```
 
-When we run this command we see 3 containers running. One is `streaming-examples-console-1` which sets up the redpanda, other is the `streaming-examples-kafka-broker-1` which sets up the kafka broker and we see a new container `streaming-examples-demo-data-1`, which we have just added to our compose.yaml and quix.yaml with the `quix pipeline update`. This container will publish the hardcoded json files to the kafka topic. To see the logs we can run the below command
+When we run this command we see 3 containers running. One is `streaming-examples-console-1` which sets up the redpanda, other is the `streaming-examples-kafka-broker-1` which sets up the kafka broker and we see a new container `streaming-examples-demo-data-1`, which we have just added to our compose.yaml and quix.yaml with the `quix pipeline update`. This container will publish F1 data line by line from a JSON file to the kafka topic. To see the logs we can run the below command
 
 ```bash
 docker compose logs demo-data -f
@@ -89,4 +89,6 @@ docker compose logs demo-data -f
 
 We can now view the logs. The -f is for flowing logs, that is we can view the logs continously as they come up. This demo-data container will shutdown once it has published all the data from the demo_stream.json data
 
-To view the pipeline, we can run the `quix pipeline view` which will create an image in the pipeline.md file. Now we are done with the source part and will move on to the transformation / stream processing part
+To view the pipeline, we can run the `quix pipeline view` which will create an image in the pipeline.md file. Now we are done with the data source part and will move on to the transformation / stream processing part
+
+Now, we will run the `quix apps create` again, but this time to create a "Starter Transformation", which is responsible for consuming data from a topic, apply a simple transformation and then publish the transformed result to a new output topic. We name this folder `data-transform`
