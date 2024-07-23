@@ -1,4 +1,13 @@
 services:
+  demo-data:
+    volumes:
+      - /dev/null:/app/.env
+    build:
+      context: demo-data
+      dockerfile: dockerfile
+    environment:
+      output: f1-data
+      Quix__Broker__Address: kafka-broker:9092
   kafka-broker:
     image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
     command: |
