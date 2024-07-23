@@ -92,3 +92,17 @@ We can now view the logs. The -f is for flowing logs, that is we can view the lo
 To view the pipeline, we can run the `quix pipeline view` which will create an image in the pipeline.md file. Now we are done with the data source part and will move on to the transformation / stream processing part
 
 Now, we will run the `quix apps create` again, but this time to create a "Starter Transformation", which is responsible for consuming data from a topic, apply a simple transformation and then publish the transformed result to a new output topic. We name this folder `data-transform`
+
+Now, we cd into the new micro service `data-transform` and open the `app.yaml` file. Here we check the value for the key `defaultValue` for the InputTopic under `variables`. We know that the `demo-data` we have created, will push the f1 telemery data to the topic named `f1-topic`. So, we need to fetch data from this topic to apply transformations to it. So we will change the value of the key `defaultValue` for the InputTopic to `f1-data`. Also, we change the `defaultValue` for the OutputTopic to `table-data` just so it looks good
+
+Now, we run the `quix vars export` to create local environment variables. The env variables will contain the Quix Address Port, the Input and Output Topic. Then we write some transformation in the `main.py` file
+
+Now, we again do the `quix pipeline update` to update the pipeline. This time, the quix.yaml, under the `deployments`, we will have two services. Even the pipeline.md will be updated with two services. Then we do the `quix pipeline up`, a new pipeline will be built in the `compose.yaml` file, under the `services`, we will get a new service `data-transform`. A new container will be built for this service
+
+Now we run the 
+
+```bash
+docker compose ps --format "table {{.Name}}\t{{.Status}}"
+```
+
+We can see there will be 4 services. The newest container being the `streaming-examples-data-transform-1`. We can check the logs to view its output. We can open the RedPanda on the localhost:8080 and under the topics, we will find a new topic with the name `table-data` and it contains the messages with the transformations that we have applied with the data-transform service

@@ -8,6 +8,16 @@ services:
     environment:
       output: f1-data
       Quix__Broker__Address: kafka-broker:9092
+  data-transform:
+    volumes:
+      - /dev/null:/app/.env
+    build:
+      context: data-transform
+      dockerfile: dockerfile
+    environment:
+      input: f1-data
+      output: table-data
+      Quix__Broker__Address: kafka-broker:9092
   kafka-broker:
     image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
     command: |
