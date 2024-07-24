@@ -106,3 +106,30 @@ docker compose ps --format "table {{.Name}}\t{{.Status}}"
 ```
 
 We can see there will be 4 services. The newest container being the `streaming-examples-data-transform-1`. We can check the logs to view its output. We can open the RedPanda on the localhost:8080 and under the topics, we will find a new topic with the name `table-data` and it contains the messages with the transformations that we have applied with the data-transform service
+
+## Stateless processing
+
+- No context of previous messages. When we are processing a message, we do not care about the previous message
+- No need to sticl messages to one partition/instance of microservice in consumer group
+- We processes messages one at a time
+
+Use Cases
+
+
+- Schema Conversions (when we want to update how each message is represented / change how it is shown)
+- Row/Column filtering (when we want to add / update / filter(remove) any columns or rows. For this we check each message one at a time and do not care about the previous messages)
+- Feature computations inline (creating new features only using other columns values inside one row. Like we did in creating the acceleration-total feature, where we need the informatio from the current message and not relying on previous messages)
+
+## Stateful processing
+
+- Context of previous messages is needed as we may rely on previous messages
+- Important to handle streams to avoid state conflicts
+- state recovery
+
+Use Cases:
+
+- Aggregations - Sum, Max, Mean, Min of a variable per series
+	- Eg: We are getting temperature stream for each second and want to get maximum temperature per day
+- Aggregations per window of time
+	- DownSampling, Data Normation, Context features
+	- Eg: We are getting temperature stream for each second and we want the average temperature per hour. So we need all the previous messages
