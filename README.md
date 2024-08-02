@@ -133,3 +133,67 @@ Use Cases:
 - Aggregations per window of time
 	- DownSampling, Data Normation, Context features
 	- Eg: We are getting temperature stream for each second and we want the average temperature per hour. So we need all the previous messages
+
+# Initial Code for data-tarnsform was this
+
+```python
+import os
+from quixstreams import Application
+import uuid
+import json
+
+# for local dev, load env vars from a .env file
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+app = Application(consumer_group="data-transformation-v1", auto_offset_reset="earliest")
+
+input_topic = app.topic(os.environ["input"])
+output_topic = app.topic(os.environ["output"])
+
+sdf = app.dataframe(input_topic)
+
+sdf = sdf.apply(lambda msg: msg["payload"], expand=True)
+
+# let us do some more transformations
+
+
+def transform(row: dict) -> dict:
+    new_row = {}
+    new_row["time"] = row["time"]
+
+    for key in row["values"]:
+        new_row[row["name"] + "-" + key] = row["values"][key]
+
+    return new_row
+
+
+sdf = sdf.apply(transform)
+
+sdf = sdf[sdf.contains("accelerometer-x")]
+
+# create a new column
+sdf["accelerometer-total"] = (
+    sdf["accelerometer-x"].abs()
+    + sdf["accelerometer-y"].abs()
+    + sdf["accelerometer-z"].abs()
+)
+
+# update() function:
+# Apply a function to mutate value in-place or to perform a side effect that doesn't update the value (e.g. print a value to the console).
+sdf = sdf.update(lambda row: print(list(row.values())))
+
+# now we publish the transformed data to a topic
+sdf = sdf.to_topic(output_topic)
+
+if __name__ == "__main__":
+    app.run(sdf)
+
+```
+
+Now, we will update this data-transform file to do some state processing. What we did so far is stateless operation. We have the messages from the input topic, then for each message, we transformed the message by taking only the necessary columns and even creating a new column. So, the thing here is, we are dealing with individual messages and when we are working with a message, we are not concered about the previous messages, hence this is a stateless process
+
+
+
