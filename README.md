@@ -195,5 +195,72 @@ if __name__ == "__main__":
 
 Now, we will update this data-transform file to do some state processing. What we did so far is stateless operation. We have the messages from the input topic, then for each message, we transformed the message by taking only the necessary columns and even creating a new column. So, the thing here is, we are dealing with individual messages and when we are working with a message, we are not concered about the previous messages, hence this is a stateless process
 
+So now, lets assume we are getting the data from a car and as the data comes, we need to update the odometer of the car. Let's assume the total distance of the car traveled is stored in the accelerometer-total column. So one way to do this is, create a odometer variable, then add the accelerometer-total value to the odometer and return it to an output topic. So let's try to implement this in the main.py of data-transform
+
+```python
+# we define an empty odo var
+odometer = 0
+
+# then we write a function to add the accelerometer-total to odo
+# and we return the odo
+def odo_calc(row):
+    global odometer
+    odometer += row["accelerometer-total"]
+    return odometer
+
+# then we apply this func to our sdf and the new stream will be the stream of odo values
+sdf = sdf.apply(odo_calc)
+
+# we console log the output for each message
+sdf = sdf.update(lambda row: print(row))
+```
+
+Running this code will produce the below output (make sure that the containers and kakfa container are running. If not do `docker compose up`)
+```
+3371.240866929002
+3371.496215024251
+3371.870252042766
+3372.038962888047
+3372.1303216135784
+3372.382108509214
+3372.5501138365744
+3372.6810873641357
+3372.777936503777
+```
+It seems perfect. The odometer is increasing with each step. (if we run the demo-data main.py again, we can see that the odometer will start increasing again). Now let's say for some reason, this microservice gets crashed. Let's manually crash it ctrl-c and run the main.py of data-transform again. The below are the results
+
+```
+0.09351031407471745
+0.1495566109454259
+0.20797080599125473
+0.3062925389356911
+0.43033666909243906
+0.5083161634929477
+0.5739533320622517
+0.7183588438548146
+0.7947133308693766
+0.8875286849498748
+```
+
+We see that the odometer starts again from zero. It does not begin from its previous value. This is a huge issue. This is because, the value is being stored in-memory of that service. So when service goes down, that value goes down and beings afresh from 0 when restarted. Now to solve this we use something called `State` from `quix-streams`
+
+```python
+from quixstreams import Application, State
+
+def odo_func(row: dict, state: State):  # the order must be row, state and not reverse
+    odometer = state.get(
+        "odo", 0
+    )  # get the odometer value is "odo" exists, else set the value to 0
+    odometer += row["accelerometer-total"]
+    state.set("odo", odometer)  # set the state with new odometer value
+
+    return odometer
 
 
+sdf = sdf.apply(
+    odo_func, stateful=True
+)  # we need to specify that its a statefull operation
+
+sdf = sdf.update(lambda row: print(row))
+```
+Here, we import a `State` object from `quix-streams`. In this state object, we store our odometer. So we assign our key as "odo" in the state. And we will get it with `.get` and if it does not exist, then we will return 0. Then after adding the odometer, we will update the state by calling the `.set()` method and passing it the key and the new value. We need to make sure that when we are passing this function to the `.apply()` function, we need to set the `stateful=True`, which will let `quix` know that we are doing a stateful operation
